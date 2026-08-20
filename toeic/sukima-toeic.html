@@ -104,6 +104,7 @@
   .fbrow{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:8px 0}
   .toastmsg{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:10px;font-size:.85rem;z-index:10;max-width:90%;text-align:center}
   .gchip{display:inline-block;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:1px 12px;font-size:.75rem;font-weight:700;margin-bottom:8px}
+  .bkta{width:100%;min-height:84px;border:1.5px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);font-size:.75rem;padding:10px;word-break:break-all;font-family:ui-monospace,monospace;box-sizing:border-box}
   @media (prefers-reduced-motion: reduce){
     .btn:active{transform:none}
     .fx span,.shake,.pop{animation:none}
@@ -548,7 +549,7 @@ const byWord={}; WORDS.forEach(x=>byWord[x.w]=x);
 
 /* ---------- state ---------- */
 const KEY="sukima-toeic-v1", INT=[0,1,3,7,14,30], GOAL=3, EXAM=new Date(2027,0,31);
-let S={c:{},streak:0,last:"",day:"",done:0,tw:0,cw:0,gs:{},gc:{},ms:[],snd:true};
+let S={c:{},streak:0,last:"",day:"",done:0,sess:0,tw:0,cw:0,gs:{},gc:{},ms:[],snd:true};
 let storageOK=true;
 try{ const raw=localStorage.getItem(KEY); if(raw) S=Object.assign(S,JSON.parse(raw)); }
 catch(e){ storageOK=false; }
@@ -633,17 +634,23 @@ function dueCount(){ const t=dayNum(); let n=0; for(const w in S.c){ if(S.c[w].d
 
 /* ---------- session ---------- */
 let ses=null;
-function pickWords(n){
-  const t=dayNum();
-  const due=Object.keys(S.c).filter(w=>byWord[w]&&S.c[w].d<=t)
+function pickWords(n,opt){
+  if(opt==="rand") return shuffle(WORDS.slice()).slice(0,n);
+  const t=dayNum(), lv=opt?Number(opt):0;
+  const inLv=x=>!lv||x.lv===lv;
+  const due=Object.keys(S.c).filter(w=>byWord[w]&&S.c[w].d<=t&&inLv(byWord[w]))
     .sort((a,b)=>S.c[a].d-S.c[b].d||S.c[a].b-S.c[b].b).slice(0,n);
   const q=due.slice();
-  if(q.length<n) for(const x of WORDS){ if(!S.c[x.w]){ q.push(x.w); if(q.length>=n) break; } }
   if(q.length<n){
-    const rest=Object.keys(S.c).filter(w=>byWord[w]&&!q.includes(w)).sort((a,b)=>S.c[a].b-S.c[b].b);
+    const fresh=shuffle(WORDS.filter(x=>!S.c[x.w]&&inLv(x)).map(x=>x.w));
+    for(const w of fresh){ q.push(w); if(q.length>=n) break; }
+  }
+  if(q.length<n){
+    const rest=shuffle(Object.keys(S.c).filter(w=>byWord[w]&&!q.includes(w)&&inLv(byWord[w])))
+      .sort((a,b)=>S.c[a].b-S.c[b].b);
     q.push(...rest.slice(0,n-q.length));
   }
-  return q.map(w=>byWord[w]);
+  return shuffle(q.map(w=>byWord[w]));
 }
 const GTAGS=[["品詞",0,7],["動詞の形",8,13],["前置詞",14,18],["接続詞",19,23],["代名詞・関係詞",24,28],["比較・その他",29,31],["語彙・定型表現",32,35]];
 function gtag(i){ for(const [t,a,b] of GTAGS) if(i>=a&&i<=b) return t; return "その他"; }
@@ -664,11 +671,55 @@ function choicesFor(it){
 function startSession(mode,genre){
   const steps=[];
   if(mode==="mix"){ pickWords(10).forEach(x=>steps.push({t:"w",x})); pickGrammar(3).forEach(g=>steps.push({t:"g",...g})); }
-  else if(mode==="word"){ pickWords(12).forEach(x=>steps.push({t:"w",x})); }
+  else if(mode==="word"){ pickWords(12,genre).forEach(x=>steps.push({t:"w",x})); }
   else { pickGrammar(6,genre).forEach(g=>steps.push({t:"g",...g})); }
   if(!steps.length){ return; }
   ses={steps,i:0,total:steps.length,correct:0,mode,genre:genre||""};
   renderStep();
+}
+function wordMenu(){
+  const lvdesc=lv=>{ const tot=WORDS.filter(x=>x.lv===lv).length; return masteredCount(lv)+"/"+tot+" 習得"; };
+  const row=(label,opt,desc)=>'<button class="choice" onclick="startSession(\'word\',\''+opt+'\')"><b>'+label+'</b>'+
+    '<span style="float:right;color:var(--muted);font-size:.8rem">'+desc+"</span></button>";
+  view.innerHTML=
+    '<div class="panel" style="margin-top:16px"><h3>単語モードを選ぶ</h3>'+
+    '<span style="font-size:.85rem;color:var(--muted)">各12問・出題順はランダム。どのモードでも復習記録に反映されます。</span></div>'+
+    row("おまかせ(復習優先)","","復習 "+dueCount()+"語 → 新規")+
+    row("600点レベル","600",lvdesc(600))+
+    row("730点レベル","730",lvdesc(730))+
+    row("860点レベル","860",lvdesc(860))+
+    row("完全ランダム","rand","全"+WORDS.length+"語から")+
+    '<button class="btn sub" onclick="home()">ホームへ</button>';
+  window.scrollTo(0,0);
+}
+function exportCode(){ return btoa(unescape(encodeURIComponent(JSON.stringify(S)))); }
+function importCode(str){
+  try{
+    const o=JSON.parse(decodeURIComponent(escape(atob((str||"").trim()))));
+    if(!o||typeof o!=="object"||!("c" in o)) throw 0;
+    S=Object.assign({},S,o); persist(); home(); toast("進捗を復元しました!");
+  }catch(e){ toast("コードが正しくないようです"); }
+}
+function copyBk(){
+  try{
+    navigator.clipboard.writeText(exportCode())
+      .then(()=>toast("コピーしました。メモアプリ等に貼って保存してください"))
+      .catch(()=>toast("コピーできませんでした。長押しで全選択してコピーしてください"));
+  }catch(e){ toast("コピーできませんでした。長押しで全選択してコピーしてください"); }
+}
+function backupView(){
+  view.innerHTML=
+    '<div class="panel" style="margin-top:16px"><h3>💾 バックアップと復元</h3>'+
+    '<span style="font-size:.85rem;color:var(--muted)">進捗はこの端末のブラウザ内に保存されるため、アプリの更新やSafariのデータ削除で消えることがあります。'+
+    '<b>ときどき下のコードをコピーしてメモアプリに保存</b>しておけば、いつでも復元できます。</span></div>'+
+    '<div class="panel"><h3>保存(コードを控える)</h3>'+
+    '<textarea class="bkta" readonly onclick="this.select()">'+exportCode()+"</textarea>"+
+    '<button class="btn sub" onclick="copyBk()">コードをコピー</button></div>'+
+    '<div class="panel"><h3>復元(コードを貼り付け)</h3>'+
+    '<textarea class="bkta" id="bkin" placeholder="ここにバックアップコードを貼り付け"></textarea>'+
+    '<button class="btn" onclick="importCode(document.getElementById(\'bkin\').value)">復元する</button></div>'+
+    '<button class="btn sub" onclick="home()">ホームへ</button>';
+  window.scrollTo(0,0);
 }
 function gramMenu(){
   const rows=GTAGS.map(g=>{
@@ -710,7 +761,7 @@ function home(){
     (due>0?'<div style="text-align:center;margin:14px 0 4px"><span class="duechip">今日の復習: '+due+"語</span></div>":"")+
     '<button class="btn" onclick="startSession(\'mix\')">▶ 5分セッション(単語10+文法3)</button>'+
     '<div class="btnrow">'+
-      '<button class="btn sub" onclick="startSession(\'word\')">単語だけ 12問</button>'+
+      '<button class="btn sub" onclick="wordMenu()">単語モード</button>'+
       '<button class="btn sub" onclick="gramMenu()">文法ジャンル特訓</button>'+
     "</div>"+
     '<div class="panel"><h3>学習の記録</h3><div class="statgrid">'+
@@ -718,6 +769,7 @@ function home(){
       '<div class="stat"><div class="num">'+seen+"/"+WORDS.length+'</div><div class="lbl">学習した単語</div></div>'+
       '<div class="stat"><div class="num">'+acc+'%</div><div class="lbl">正答率</div></div>'+
     "</div>"+lvbar+"</div>"+
+    '<button class="btn sub" onclick="backupView()">💾 バックアップ / 復元</button>'+
     '<details><summary>📱 iPhoneでアプリのように使う</summary>Safariでこのページを開き、共有ボタン(□に↑)→「ホーム画面に追加」。アイコンから1タップで起動できます。進捗はこの端末のブラウザに保存されます'+(storageOK?"":"(⚠️ この環境では保存が無効です)")+'。</details>'+
     '<div class="foot">収録: 単語'+WORDS.length+'語(オリジナル編集)+文法'+GRAMMAR.length+'問 / 「覚えた」=復習間隔14日以上<br>右上の🔊で効果音・自動読み上げを切り替え</div>';
   sndIcon();
@@ -837,7 +889,7 @@ function finishSession(){
     S.streak=(S.last===y)?S.streak+1:1;
     S.last=t;
   }
-  S.done++;
+  S.done++; S.sess=(S.sess||0)+1;
   const first=ses.steps.filter(s=>!s.retry).length;
   const pct=first?Math.round(100*ses.correct/first):0;
   const msg= pct>=90?"完璧!この調子。": pct>=70?"いい感じ。忘れた頃にまた出ます。": pct>=50?"間違えた語こそ覚えるチャンス。":"難しかった分、次は必ず楽になります。";
@@ -856,10 +908,14 @@ function finishSession(){
     '<div class="row" style="justify-content:center;gap:20px">'+
       '<span class="streak">🔥 '+S.streak+'日</span>'+
       '<span class="dotlbl" style="font-size:.85rem">今日 '+S.done+"/"+GOAL+" セット"+(S.done>=GOAL?" 達成🎉":"")+'</span>'+
-    "</div></div>"+
+    "</div></div>";
+  const wlabels={"600":"600点","730":"730点","860":"860点","rand":"ランダム"};
+  const glabel=ses.genre?(ses.mode==="word"?(wlabels[ses.genre]||ses.genre):ses.genre):"";
+  view.innerHTML+=
     miles.map(m=>'<div class="mile">'+m+"</div>").join("")+
-    '<button class="btn" onclick="startSession(\''+ses.mode+'\',\''+ses.genre+'\')">もう1セット'+(ses.genre?"("+ses.genre+")":"")+'</button>'+
-    (ses.genre?'<button class="btn sub" onclick="gramMenu()">ジャンル選択へ</button>':"")+
+    (S.sess%7===0?'<div class="mile" style="background:var(--accent-soft);color:var(--accent)">💾 ホームの「バックアップ」からコードを保存しておくと、データが消えても復元できます</div>':"")+
+    '<button class="btn" onclick="startSession(\''+ses.mode+'\',\''+ses.genre+'\')">もう1セット'+(glabel?"("+glabel+")":"")+'</button>'+
+    (ses.genre?'<button class="btn sub" onclick="'+(ses.mode==="word"?"wordMenu()":"gramMenu()")+'">モード選択へ</button>':"")+
     '<button class="btn sub" onclick="home()">ホームへ</button>';
   window.scrollTo(0,0);
 }
