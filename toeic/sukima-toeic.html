@@ -92,12 +92,28 @@
   details{font-size:.82rem;color:var(--muted);margin:16px 4px}
   details summary{cursor:pointer;font-weight:700}
   .foot{font-size:.72rem;color:var(--muted);text-align:center;margin-top:20px}
-  @media (prefers-reduced-motion: reduce){ .btn:active{transform:none} }
+  .sndbtn{background:var(--card);border:1.5px solid var(--line);border-radius:999px;width:36px;height:36px;font-size:1.05rem;cursor:pointer;line-height:1;padding:0}
+  .hright{display:flex;align-items:center;gap:10px}
+  .fx{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:9}
+  .fx span{font-size:5.5rem;opacity:0;animation:fxpop .7s ease-out forwards}
+  @keyframes fxpop{0%{opacity:0;transform:scale(.3)}25%{opacity:1;transform:scale(1.15)}55%{transform:scale(1)}100%{opacity:0;transform:scale(1)}}
+  .shake{animation:shake .4s}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+  .pop{animation:pop .35s}
+  @keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.06)}100%{transform:scale(1)}}
+  @media (prefers-reduced-motion: reduce){
+    .btn:active{transform:none}
+    .fx span,.shake,.pop{animation:none}
+    .fx span{opacity:0}
+  }
 </style>
 <div id="wrap">
   <header>
     <div class="brand">スキマTOEIC</div>
-    <div class="exam">1月本番(目安)まで <b id="dleft">--</b> 日</div>
+    <div class="hright">
+      <div class="exam">1月本番(目安)まで <b id="dleft">--</b> 日</div>
+      <button class="sndbtn" id="sndbtn" onclick="toggleSnd()" title="音のオン/オフ">🔊</button>
+    </div>
   </header>
   <main id="view"></main>
 </div>
@@ -529,7 +545,7 @@ const byWord={}; WORDS.forEach(x=>byWord[x.w]=x);
 
 /* ---------- state ---------- */
 const KEY="sukima-toeic-v1", INT=[0,1,3,7,14,30], GOAL=3, EXAM=new Date(2027,0,31);
-let S={c:{},streak:0,last:"",day:"",done:0,tw:0,cw:0,gs:{},ms:[]};
+let S={c:{},streak:0,last:"",day:"",done:0,tw:0,cw:0,gs:{},ms:[],snd:true};
 let storageOK=true;
 try{ const raw=localStorage.getItem(KEY); if(raw) S=Object.assign(S,JSON.parse(raw)); }
 catch(e){ storageOK=false; }
@@ -558,6 +574,37 @@ function speak(t){
     const u=new SpeechSynthesisUtterance(t); u.lang="en-US"; u.rate=0.95;
     speechSynthesis.cancel(); speechSynthesis.speak(u);
   }catch(e){}
+}
+function autoSpeak(t,delay){ if(!S.snd) return; if(delay){ setTimeout(()=>{ if(S.snd) speak(t); },delay); } else speak(t); }
+function sndIcon(){ const b=document.getElementById("sndbtn"); if(b) b.textContent=S.snd?"🔊":"🔇"; }
+function toggleSnd(){ S.snd=!S.snd; persist(); sndIcon(); if(!S.snd){ try{speechSynthesis.cancel();}catch(e){} } }
+let AC=null;
+function tone(seq){
+  if(!S.snd) return;
+  try{
+    AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    if(AC.state==="suspended") AC.resume();
+    const t0=AC.currentTime;
+    seq.forEach(n=>{
+      const [f,st,d,type,vol]=n;
+      const o=AC.createOscillator(), g=AC.createGain();
+      o.type=type||"sine"; o.frequency.value=f;
+      g.gain.setValueAtTime(vol||0.16,t0+st);
+      g.gain.exponentialRampToValueAtTime(0.001,t0+st+d);
+      o.connect(g).connect(AC.destination);
+      o.start(t0+st); o.stop(t0+st+d);
+    });
+  }catch(e){}
+}
+function sndOK(){ tone([[659,0,0.13],[880,0.1,0.25]]); }
+function sndNG(){ tone([[196,0,0.22,"square",0.09]]); }
+function sndDone(){ tone([[523,0,0.14],[659,0.12,0.14],[784,0.24,0.14],[1047,0.36,0.45]]); }
+function fx(sym,bad){
+  const d=document.createElement("div"); d.className="fx";
+  d.innerHTML="<span>"+sym+"</span>";
+  document.body.appendChild(d);
+  setTimeout(()=>d.remove(),800);
+  if(bad){ view.classList.add("shake"); setTimeout(()=>view.classList.remove("shake"),450); }
 }
 function masteredCount(lv){
   let n=0; for(const w in S.c){ if(S.c[w].b>=4 && byWord[w] && (!lv||byWord[w].lv===lv)) n++; } return n;
@@ -633,7 +680,8 @@ function home(){
       '<div class="stat"><div class="num">'+acc+'%</div><div class="lbl">正答率</div></div>'+
     "</div>"+lvbar+"</div>"+
     '<details><summary>📱 iPhoneでアプリのように使う</summary>Safariでこのページを開き、共有ボタン(□に↑)→「ホーム画面に追加」。アイコンから1タップで起動できます。進捗はこの端末のブラウザに保存されます'+(storageOK?"":"(⚠️ この環境では保存が無効です)")+'。</details>'+
-    '<div class="foot">収録: 単語'+WORDS.length+'語(オリジナル編集)+文法'+GRAMMAR.length+'問 / 「覚えた」=復習間隔14日以上</div>';
+    '<div class="foot">収録: 単語'+WORDS.length+'語(オリジナル編集)+文法'+GRAMMAR.length+'問 / 「覚えた」=復習間隔14日以上<br>右上の🔊で効果音・自動読み上げを切り替え</div>';
+  sndIcon();
 }
 function renderStep(){
   const st=ses.steps[ses.i];
@@ -647,6 +695,7 @@ function renderStep(){
       cs.map(m=>'<button class="choice" data-m="'+esc(m)+'">'+esc(m)+"</button>").join("")+
       '<div class="fb" id="fb"></div>';
     view.querySelectorAll(".choice").forEach(b=>b.onclick=()=>answerWord(st,b));
+    autoSpeak(st.x.w);
   }else{
     const q=st.q;
     view.innerHTML=head+
@@ -661,9 +710,10 @@ function renderStep(){
 function lockChoices(){ view.querySelectorAll(".choice").forEach(b=>b.disabled=true); }
 function nextBtn(auto){
   const id="nx"+ses.i;
-  const html='<button class="btn" id="'+id+'" style="margin-top:12px">次へ</button>';
+  const html='<button class="btn" id="'+id+'" style="margin-top:12px">次へ</button>'+
+    (auto?'<div class="dotlbl" style="text-align:center;margin-top:6px">2.5秒後に自動で進みます(タップで即)</div>':'');
   setTimeout(()=>{ const b=document.getElementById(id); if(b) b.onclick=advance; },0);
-  if(auto) setTimeout(()=>{ if(document.getElementById(id)) advance(); },900);
+  if(auto) setTimeout(()=>{ if(document.getElementById(id)) advance(); },2500);
   return html;
 }
 function answerWord(st,btn){
@@ -676,7 +726,9 @@ function answerWord(st,btn){
   else { c.b=0; c.d=t; if(!st.retry){ ses.steps.push({t:"w",x:st.x,retry:true}); ses.total++; } }
   S.c[st.x.w]=c; persist();
   btn.classList.add(ok?"ok":"ng");
+  if(ok){ btn.classList.add("pop"); sndOK(); fx("⭕"); } else { sndNG(); fx("❌",true); }
   if(!ok) view.querySelectorAll(".choice").forEach(b=>{ if(b.dataset.m===st.x.m) b.classList.add("ok"); });
+  autoSpeak(st.x.p,450);
   document.getElementById("fb").innerHTML=
     '<div class="mark '+(ok?"good":"bad")+'">'+(ok?"正解!":"不正解 → あとでもう一度出ます")+'</div>'+
     '<div style="margin:8px 0"><button class="spk" onclick="speak(\''+st.x.p.replace(/'/g,"\\'")+'\')">🔊 発音を聞く</button></div>'+
@@ -688,7 +740,9 @@ function answerGrammar(st,btn){
   if(!st.retry) ses.correct+=ok?1:0;
   S.gs[st.gi]=(S.gs[st.gi]||0)+1; persist();
   btn.classList.add(ok?"ok":"ng");
+  if(ok){ btn.classList.add("pop"); sndOK(); fx("⭕"); } else { sndNG(); fx("❌",true); }
   if(!ok) view.querySelectorAll(".choice").forEach(b=>{ if(Number(b.dataset.i)===q[2]) b.classList.add("ok"); });
+  autoSpeak(q[0].replace("___",q[1][q[2]]),450);
   document.getElementById("fb").innerHTML=
     '<div class="mark '+(ok?"good":"bad")+'">'+(ok?"正解!":"不正解")+'</div>'+
     '<div class="exp">正解: <b>'+esc(q[1][q[2]])+"</b><br>"+esc(q[3])+"</div>"+nextBtn(false);
@@ -716,6 +770,7 @@ function finishSession(){
   [[50,"⭐ 50語マスター!"],[100,"⭐ 100語マスター!折り返しが見えてきた"],[200,"⭐ 200語マスター!語彙が武器になっています"],[300,"🏆 300語マスター!"],[WORDS.length,"🏆 全単語マスター!!"]]
     .forEach(([n,m])=>{ if(mc>=n&&!S.ms.includes("w"+n)){ S.ms.push("w"+n); miles.push(m); } });
   persist();
+  sndDone();
   view.innerHTML=
     '<div class="panel" style="margin-top:24px">'+
     '<div class="bignum">'+ses.correct+" / "+first+'</div>'+
