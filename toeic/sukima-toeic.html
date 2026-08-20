@@ -101,6 +101,9 @@
   @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
   .pop{animation:pop .35s}
   @keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.06)}100%{transform:scale(1)}}
+  .fbrow{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:8px 0}
+  .toastmsg{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:10px;font-size:.85rem;z-index:10;max-width:90%;text-align:center}
+  .gchip{display:inline-block;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:1px 12px;font-size:.75rem;font-weight:700;margin-bottom:8px}
   @media (prefers-reduced-motion: reduce){
     .btn:active{transform:none}
     .fx span,.shake,.pop{animation:none}
@@ -545,7 +548,7 @@ const byWord={}; WORDS.forEach(x=>byWord[x.w]=x);
 
 /* ---------- state ---------- */
 const KEY="sukima-toeic-v1", INT=[0,1,3,7,14,30], GOAL=3, EXAM=new Date(2027,0,31);
-let S={c:{},streak:0,last:"",day:"",done:0,tw:0,cw:0,gs:{},ms:[],snd:true};
+let S={c:{},streak:0,last:"",day:"",done:0,tw:0,cw:0,gs:{},gc:{},ms:[],snd:true};
 let storageOK=true;
 try{ const raw=localStorage.getItem(KEY); if(raw) S=Object.assign(S,JSON.parse(raw)); }
 catch(e){ storageOK=false; }
@@ -606,6 +609,23 @@ function fx(sym,bad){
   setTimeout(()=>d.remove(),800);
   if(bad){ view.classList.add("shake"); setTimeout(()=>view.classList.remove("shake"),450); }
 }
+function toast(m){
+  const d=document.createElement("div"); d.className="toastmsg"; d.textContent=m;
+  document.body.appendChild(d); setTimeout(()=>d.remove(),2800);
+}
+function aiAsk(q){
+  const url="https://claude.ai/new?q="+encodeURIComponent(q);
+  let w=null;
+  try{ w=window.open(url,"_blank"); }catch(e){}
+  if(!w) copyAsk(q);
+}
+function copyAsk(q){
+  try{
+    navigator.clipboard.writeText(q)
+      .then(()=>toast("質問文をコピーしました。AIアプリに貼り付けて聞いてください"))
+      .catch(()=>toast("開けませんでした。もう一度試してください"));
+  }catch(e){ toast("この環境ではコピーできませんでした"); }
+}
 function masteredCount(lv){
   let n=0; for(const w in S.c){ if(S.c[w].b>=4 && byWord[w] && (!lv||byWord[w].lv===lv)) n++; } return n;
 }
@@ -625,8 +645,11 @@ function pickWords(n){
   }
   return q.map(w=>byWord[w]);
 }
-function pickGrammar(n){
-  const idx=GRAMMAR.map((_,i)=>i);
+const GTAGS=[["品詞",0,7],["動詞の形",8,13],["前置詞",14,18],["接続詞",19,23],["代名詞・関係詞",24,28],["比較・その他",29,31],["語彙・定型表現",32,35]];
+function gtag(i){ for(const [t,a,b] of GTAGS) if(i>=a&&i<=b) return t; return "その他"; }
+function pickGrammar(n,genre){
+  let idx=GRAMMAR.map((_,i)=>i);
+  if(genre) idx=idx.filter(i=>gtag(i)===genre);
   shuffle(idx); idx.sort((a,b)=>(S.gs[a]||0)-(S.gs[b]||0));
   return idx.slice(0,n).map(i=>({q:GRAMMAR[i],gi:i}));
 }
@@ -638,14 +661,30 @@ function choicesFor(it){
   for(const x of pool){ if(!seen.has(x.m)){ picks.push(x.m); seen.add(x.m); } if(picks.length>=3) break; }
   return shuffle([it.m,...picks]);
 }
-function startSession(mode){
+function startSession(mode,genre){
   const steps=[];
   if(mode==="mix"){ pickWords(10).forEach(x=>steps.push({t:"w",x})); pickGrammar(3).forEach(g=>steps.push({t:"g",...g})); }
   else if(mode==="word"){ pickWords(12).forEach(x=>steps.push({t:"w",x})); }
-  else { pickGrammar(6).forEach(g=>steps.push({t:"g",...g})); }
+  else { pickGrammar(6,genre).forEach(g=>steps.push({t:"g",...g})); }
   if(!steps.length){ return; }
-  ses={steps,i:0,total:steps.length,correct:0,mode};
+  ses={steps,i:0,total:steps.length,correct:0,mode,genre:genre||""};
   renderStep();
+}
+function gramMenu(){
+  const rows=GTAGS.map(g=>{
+    const idx=GRAMMAR.map((_,i)=>i).filter(i=>gtag(i)===g[0]);
+    let seen=0,cor=0; idx.forEach(i=>{ seen+=S.gs[i]||0; cor+=S.gc[i]||0; });
+    const acc=seen?Math.round(100*cor/seen)+"%":"--";
+    return '<button class="choice" onclick="startSession(\'gram\',\''+g[0]+'\')"><b>'+g[0]+'</b>'+
+      '<span style="float:right;color:var(--muted);font-size:.8rem">'+idx.length+'問 / 正答率 '+acc+"</span></button>";
+  }).join("");
+  view.innerHTML=
+    '<div class="panel" style="margin-top:16px"><h3>文法 ジャンル別特訓</h3>'+
+    '<span style="font-size:.85rem;color:var(--muted)">正答率が低いジャンルを集中して固めるのが近道です。同じジャンル内では、解いた回数が少ない問題から出ます。</span></div>'+
+    rows+
+    '<button class="btn" onclick="startSession(\'gram\')">全ジャンルから6問</button>'+
+    '<button class="btn sub" onclick="home()">ホームへ</button>';
+  window.scrollTo(0,0);
 }
 /* ---------- views ---------- */
 const view=document.getElementById("view");
@@ -672,7 +711,7 @@ function home(){
     '<button class="btn" onclick="startSession(\'mix\')">▶ 5分セッション(単語10+文法3)</button>'+
     '<div class="btnrow">'+
       '<button class="btn sub" onclick="startSession(\'word\')">単語だけ 12問</button>'+
-      '<button class="btn sub" onclick="startSession(\'gram\')">文法だけ 6問</button>'+
+      '<button class="btn sub" onclick="gramMenu()">文法ジャンル特訓</button>'+
     "</div>"+
     '<div class="panel"><h3>学習の記録</h3><div class="statgrid">'+
       '<div class="stat"><div class="num">'+mAll+'</div><div class="lbl">覚えた単語</div></div>'+
@@ -699,7 +738,8 @@ function renderStep(){
   }else{
     const q=st.q;
     view.innerHTML=head+
-      '<div class="qcard"><div class="qsent">'+esc(q[0]).replace("___","<b>______</b>")+'</div>'+
+      '<div class="qcard"><div><span class="gchip">'+gtag(st.gi)+'</span></div>'+
+      '<div class="qsent">'+esc(q[0]).replace("___","<b>______</b>")+'</div>'+
       '<div class="ask">空所に入るのは?</div></div>'+
       q[1].map((c,ci)=>'<button class="choice" data-i="'+ci+'">'+esc(c)+"</button>").join("")+
       '<div class="fb" id="fb"></div>';
@@ -708,12 +748,14 @@ function renderStep(){
   window.scrollTo(0,0);
 }
 function lockChoices(){ view.querySelectorAll(".choice").forEach(b=>b.disabled=true); }
+let autoT=null;
+function clearAuto(){ if(autoT){ clearTimeout(autoT); autoT=null; const n=document.getElementById("autonote"); if(n) n.textContent=""; } }
 function nextBtn(auto){
   const id="nx"+ses.i;
   const html='<button class="btn" id="'+id+'" style="margin-top:12px">次へ</button>'+
-    (auto?'<div class="dotlbl" style="text-align:center;margin-top:6px">2.5秒後に自動で進みます(タップで即)</div>':'');
+    (auto?'<div class="dotlbl" id="autonote" style="text-align:center;margin-top:6px">2.5秒後に自動で進みます(ボタンを押すと止まります)</div>':'');
   setTimeout(()=>{ const b=document.getElementById(id); if(b) b.onclick=advance; },0);
-  if(auto) setTimeout(()=>{ if(document.getElementById(id)) advance(); },2500);
+  if(auto) autoT=setTimeout(()=>{ autoT=null; if(document.getElementById(id)) advance(); },2500);
   return html;
 }
 function answerWord(st,btn){
@@ -731,23 +773,59 @@ function answerWord(st,btn){
   autoSpeak(st.x.p,450);
   document.getElementById("fb").innerHTML=
     '<div class="mark '+(ok?"good":"bad")+'">'+(ok?"正解!":"不正解 → あとでもう一度出ます")+'</div>'+
-    '<div style="margin:8px 0"><button class="spk" onclick="speak(\''+st.x.p.replace(/'/g,"\\'")+'\')">🔊 発音を聞く</button></div>'+
+    '<div class="fbrow">'+
+      '<button class="spk" onclick="clearAuto();speak(\''+st.x.p.replace(/'/g,"\\'")+'\')">🔊 発音</button>'+
+      '<button class="spk" id="aibtn">🤖 AIに聞く</button>'+
+      (ok?'<button class="spk" id="gubtn">🤔 まぐれかも</button>':"")+
+    '</div>'+
     '<div class="exp">'+hlPhrase(st.x)+"<br>"+esc(st.x.pj)+"</div>"+nextBtn(ok);
+  const ask="TOEIC対策で単語を勉強しています。単語「"+st.x.w+"」(意味: "+st.x.m+")について、日本語で教えてください。\n"+
+    "1) 覚え方のコツ 2) TOEICでよく出る使われ方 3) 短い例文を2つ\n参考フレーズ: "+st.x.p+"("+st.x.pj+")";
+  const ab=document.getElementById("aibtn"); if(ab) ab.onclick=()=>{ clearAuto(); aiAsk(ask); };
+  const gb=document.getElementById("gubtn");
+  if(gb) gb.onclick=()=>{
+    clearAuto();
+    const cc=S.c[st.x.w]; if(cc){ cc.b=0; cc.d=dayNum(); }
+    if(!st.retry){ ses.steps.push({t:"w",x:st.x,retry:true}); }
+    persist();
+    toast("覚えていない扱いにしました。このセッションの最後にもう一度出ます");
+    advance();
+  };
 }
 function answerGrammar(st,btn){
   lockChoices();
   const q=st.q, ok=Number(btn.dataset.i)===q[2];
   if(!st.retry) ses.correct+=ok?1:0;
-  S.gs[st.gi]=(S.gs[st.gi]||0)+1; persist();
+  S.gs[st.gi]=(S.gs[st.gi]||0)+1;
+  if(ok) S.gc[st.gi]=(S.gc[st.gi]||0)+1;
+  persist();
   btn.classList.add(ok?"ok":"ng");
   if(ok){ btn.classList.add("pop"); sndOK(); fx("⭕"); } else { sndNG(); fx("❌",true); }
   if(!ok) view.querySelectorAll(".choice").forEach(b=>{ if(Number(b.dataset.i)===q[2]) b.classList.add("ok"); });
   autoSpeak(q[0].replace("___",q[1][q[2]]),450);
   document.getElementById("fb").innerHTML=
     '<div class="mark '+(ok?"good":"bad")+'">'+(ok?"正解!":"不正解")+'</div>'+
+    '<div class="fbrow">'+
+      '<button class="spk" id="aibtn">🤖 AIに聞く</button>'+
+      (ok?'<button class="spk" id="gubtn">🤔 まぐれかも</button>':"")+
+    '</div>'+
     '<div class="exp">正解: <b>'+esc(q[1][q[2]])+"</b><br>"+esc(q[3])+"</div>"+nextBtn(false);
+  const L=["A","B","C","D"];
+  const ask="TOEICのPart 5形式の文法問題です。日本語でやさしく解説してください。\n"+
+    "問題: "+q[0]+"\n選択肢: "+q[1].map((c,i)=>L[i]+") "+c).join("  ")+"\n正解: "+q[1][q[2]]+"\n"+
+    "なぜこれが正解なのか、他の選択肢がダメな理由、この問題タイプ("+gtag(st.gi)+")の見分け方のコツも教えてください。";
+  const ab=document.getElementById("aibtn"); if(ab) ab.onclick=()=>aiAsk(ask);
+  const gb=document.getElementById("gubtn");
+  if(gb) gb.onclick=()=>{
+    S.gc[st.gi]=Math.max(0,(S.gc[st.gi]||0)-1);
+    if(!st.retry){ ses.steps.push({t:"g",q:st.q,gi:st.gi,retry:true}); }
+    persist();
+    toast("このセッションの最後にもう一度出ます");
+    advance();
+  };
 }
 function advance(){
+  clearAuto();
   ses.i++;
   if(ses.i<ses.steps.length) renderStep(); else finishSession();
 }
@@ -780,7 +858,8 @@ function finishSession(){
       '<span class="dotlbl" style="font-size:.85rem">今日 '+S.done+"/"+GOAL+" セット"+(S.done>=GOAL?" 達成🎉":"")+'</span>'+
     "</div></div>"+
     miles.map(m=>'<div class="mile">'+m+"</div>").join("")+
-    '<button class="btn" onclick="startSession(\''+ses.mode+'\')">もう1セット</button>'+
+    '<button class="btn" onclick="startSession(\''+ses.mode+'\',\''+ses.genre+'\')">もう1セット'+(ses.genre?"("+ses.genre+")":"")+'</button>'+
+    (ses.genre?'<button class="btn sub" onclick="gramMenu()">ジャンル選択へ</button>':"")+
     '<button class="btn sub" onclick="home()">ホームへ</button>';
   window.scrollTo(0,0);
 }
