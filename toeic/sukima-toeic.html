@@ -1,0 +1,733 @@
+<title>スキマTOEIC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+  :root{
+    --paper:#f4f6f8; --card:#ffffff; --ink:#1f2a37; --muted:#5c6b7a;
+    --line:#dde3e9; --accent:#23617a; --accent-ink:#ffffff; --accent-soft:#e3eef3;
+    --amber:#b97c24; --amber-soft:#f6ecda;
+    --good:#2e7d4f; --good-soft:#e0f0e7; --no:#a04545; --no-soft:#f5e3e3;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0f151c; --card:#18212b; --ink:#e4eaf0; --muted:#93a2b1;
+      --line:#2b3642; --accent:#4f9cc0; --accent-ink:#08222e; --accent-soft:#1c2f3a;
+      --amber:#d9a24e; --amber-soft:#33291a;
+      --good:#6cbf8f; --good-soft:#1c2f24; --no:#cf8080; --no-soft:#33211f;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0f151c; --card:#18212b; --ink:#e4eaf0; --muted:#93a2b1;
+    --line:#2b3642; --accent:#4f9cc0; --accent-ink:#08222e; --accent-soft:#1c2f3a;
+    --amber:#d9a24e; --amber-soft:#33291a;
+    --good:#6cbf8f; --good-soft:#1c2f24; --no:#cf8080; --no-soft:#33211f;
+  }
+  *{-webkit-tap-highlight-color:transparent;box-sizing:border-box}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN",sans-serif;
+    line-height:1.7;font-feature-settings:"palt";
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  #wrap{max-width:440px;margin:0 auto;padding:0 16px 48px}
+  header{
+    display:flex;justify-content:space-between;align-items:baseline;
+    padding:14px 2px 10px;position:sticky;top:0;background:var(--paper);z-index:2;
+  }
+  .brand{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:900;font-size:1.15rem;color:var(--accent)}
+  .exam{font-size:.78rem;color:var(--muted);font-variant-numeric:tabular-nums}
+  .exam b{color:var(--amber);font-size:1rem}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:12px 0}
+  .row{display:flex;gap:12px;align-items:center;justify-content:space-between}
+  .streak{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:700;font-size:1.05rem}
+  .streak b{font-size:1.6rem;font-variant-numeric:tabular-nums}
+  .dots{display:flex;gap:6px}
+  .dot{width:14px;height:14px;border-radius:50%;background:var(--line)}
+  .dot.on{background:var(--good)}
+  .dotlbl{font-size:.72rem;color:var(--muted);text-align:right}
+  .btn{
+    display:block;width:100%;border:none;border-radius:14px;cursor:pointer;
+    font-family:"Zen Kaku Gothic New",sans-serif;font-weight:700;font-size:1.05rem;
+    padding:16px;margin:10px 0;background:var(--accent);color:var(--accent-ink);
+  }
+  .btn.sub{background:var(--accent-soft);color:var(--accent);font-size:.92rem;padding:13px}
+  .btn:active{transform:scale(.98)}
+  .btnrow{display:flex;gap:10px}
+  .btnrow .btn{margin:0}
+  .statgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center}
+  .stat .num{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:700;font-size:1.25rem;font-variant-numeric:tabular-nums}
+  .stat .lbl{font-size:.7rem;color:var(--muted)}
+  .lvrow{display:flex;align-items:center;gap:8px;margin:7px 0;font-size:.78rem}
+  .lvrow .tag{width:64px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .bar{flex:1;height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--accent);border-radius:4px}
+  .lvrow .n{width:64px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+  .duechip{display:inline-block;background:var(--amber-soft);color:var(--amber);border-radius:999px;padding:2px 12px;font-size:.8rem;font-weight:700}
+  h3{font-family:"Zen Kaku Gothic New",sans-serif;font-size:.95rem;margin:0 0 8px}
+  .prog{display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);margin:10px 2px;font-variant-numeric:tabular-nums}
+  .qcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 18px;text-align:center}
+  .qword{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:900;font-size:1.9rem;line-height:1.3;overflow-wrap:break-word}
+  .qphrase{font-size:1.02rem;margin-top:6px;color:var(--muted)}
+  .qphrase b{color:var(--accent)}
+  .qsent{font-size:1.05rem;line-height:1.9;text-align:left}
+  .qsent b{color:var(--amber);letter-spacing:.05em}
+  .ask{font-size:.78rem;color:var(--muted);margin-top:10px}
+  .choice{
+    display:block;width:100%;text-align:left;cursor:pointer;
+    background:var(--card);color:var(--ink);border:1.5px solid var(--line);border-radius:12px;
+    font-family:inherit;font-size:.98rem;padding:13px 15px;margin:8px 0;
+  }
+  .choice:active{background:var(--accent-soft)}
+  .choice.ok{border-color:var(--good);background:var(--good-soft);font-weight:700}
+  .choice.ng{border-color:var(--no);background:var(--no-soft)}
+  .choice[disabled]{cursor:default;opacity:.92}
+  .fb{margin-top:12px;font-size:.9rem}
+  .fb .mark{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:900;font-size:1.15rem}
+  .fb .mark.good{color:var(--good)} .fb .mark.bad{color:var(--no)}
+  .fb .exp{color:var(--muted);text-align:left;background:var(--accent-soft);border-radius:10px;padding:10px 12px;margin-top:8px}
+  .spk{background:none;border:1.5px solid var(--line);border-radius:999px;padding:4px 14px;font-size:.85rem;cursor:pointer;color:var(--ink)}
+  .bignum{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:900;font-size:3rem;text-align:center;color:var(--accent);font-variant-numeric:tabular-nums}
+  .msg{text-align:center;font-weight:700;margin:4px 0 12px}
+  .mile{background:var(--amber-soft);color:var(--amber);border-radius:10px;padding:8px 12px;font-weight:700;font-size:.9rem;text-align:center;margin:8px 0}
+  details{font-size:.82rem;color:var(--muted);margin:16px 4px}
+  details summary{cursor:pointer;font-weight:700}
+  .foot{font-size:.72rem;color:var(--muted);text-align:center;margin-top:20px}
+  @media (prefers-reduced-motion: reduce){ .btn:active{transform:none} }
+</style>
+<div id="wrap">
+  <header>
+    <div class="brand">スキマTOEIC</div>
+    <div class="exam">1月本番(目安)まで <b id="dleft">--</b> 日</div>
+  </header>
+  <main id="view"></main>
+</div>
+<script>
+"use strict";
+/* ---------- data ---------- */
+const W6=[
+["refund","返金、返金する","request a full refund","全額返金を求める"],
+["receipt","領収書","keep the receipt","領収書を保管しておく"],
+["invoice","請求書","send an invoice by email","請求書をメールで送る"],
+["purchase","購入、購入する","purchase office supplies","事務用品を購入する"],
+["order","注文、注文する","place an order online","オンラインで注文する"],
+["shipment","発送、積み荷","track the shipment","発送状況を追跡する"],
+["delivery","配達","free delivery service","無料配達サービス"],
+["warehouse","倉庫","store goods in a warehouse","商品を倉庫に保管する"],
+["inventory","在庫","check the inventory","在庫を確認する"],
+["supplier","供給業者","a reliable supplier","信頼できる供給業者"],
+["customer","顧客","improve customer service","顧客サービスを改善する"],
+["client","顧客、取引先","meet with a client","取引先と会う"],
+["appointment","(面会の)約束、予約","make an appointment","面会の約束を取る"],
+["schedule","予定(表)、予定を組む","a tight schedule","余裕のない日程"],
+["deadline","締め切り","meet the deadline","締め切りに間に合わせる"],
+["extension","延長、内線","ask for an extension","期限の延長を願い出る"],
+["contract","契約(書)","sign a contract","契約書に署名する"],
+["agreement","合意、契約","reach an agreement","合意に達する"],
+["proposal","提案(書)","submit a proposal","提案書を提出する"],
+["estimate","見積もり、見積もる","a rough estimate","概算の見積もり"],
+["budget","予算","within the budget","予算内で"],
+["expense","経費、費用","cut travel expenses","出張経費を削減する"],
+["fee","料金、手数料","an entrance fee","入場料"],
+["charge","料金、請求する","free of charge","無料で"],
+["discount","割引","offer a 20% discount","20%の割引を提供する"],
+["warranty","保証(書)","under warranty","保証期間内で"],
+["repair","修理、修理する","repair the copier","コピー機を修理する"],
+["maintenance","保守点検","regular maintenance work","定期的な保守作業"],
+["equipment","機器、設備","install new equipment","新しい機器を設置する"],
+["facility","施設","a fitness facility","フィットネス施設"],
+["conference","会議","attend a conference","会議に出席する"],
+["seminar","セミナー","register for a seminar","セミナーに申し込む"],
+["registration","登録","complete the registration","登録を済ませる"],
+["participant","参加者","seminar participants","セミナーの参加者"],
+["attendee","出席者","count the attendees","出席者を数える"],
+["audience","聴衆、観客","a large audience","大勢の聴衆"],
+["presentation","発表、プレゼン","give a presentation","プレゼンを行う"],
+["handout","配布資料","prepare handouts","配布資料を準備する"],
+["agenda","議題(表)","the first item on the agenda","議題の最初の項目"],
+["department","部署","the sales department","営業部"],
+["headquarters","本社","move the headquarters","本社を移転する"],
+["branch","支店、枝","open a new branch","新しい支店を開く"],
+["employee","従業員","hire new employees","新しい従業員を雇う"],
+["employer","雇用主","a former employer","以前の雇用主"],
+["colleague","同僚","help a colleague","同僚を手伝う"],
+["supervisor","上司、監督者","report to a supervisor","上司に報告する"],
+["executive","重役、役員","a senior executive","上級役員"],
+["applicant","応募者","interview the applicants","応募者を面接する"],
+["application","応募(書類)、申し込み","fill out an application","応募書類に記入する"],
+["resume","履歴書","update your resume","履歴書を更新する"],
+["candidate","候補者","a qualified candidate","資格を満たした候補者"],
+["qualification","資格、適性","meet the qualifications","応募資格を満たす"],
+["requirement","要件、必要条件","a job requirement","職務要件"],
+["experience","経験","sales experience","営業の経験"],
+["training","研修、訓練","attend a training session","研修に参加する"],
+["promotion","昇進、販売促進","get a promotion","昇進する"],
+["salary","給料","a monthly salary","月給"],
+["raise","昇給、上げる","ask for a raise","昇給を求める"],
+["bonus","賞与","a year-end bonus","年末の賞与"],
+["benefit","手当、利益","employee benefits","従業員の福利厚生"],
+["retirement","退職、引退","a retirement party","退職パーティー"],
+["resignation","辞職、辞表","hand in a resignation","辞表を提出する"],
+["transfer","異動(する)、移す","transfer to another branch","別の支店へ異動する"],
+["commute","通勤(する)","commute by train","電車で通勤する"],
+["transportation","交通(機関)","public transportation","公共交通機関"],
+["vehicle","車両","park a vehicle","車両を駐車する"],
+["passenger","乗客","passengers on board","乗車中の乗客"],
+["flight","(飛行機の)便","a direct flight","直行便"],
+["departure","出発","the departure time","出発時刻"],
+["arrival","到着","upon arrival","到着次第"],
+["destination","目的地","a popular destination","人気の目的地"],
+["reservation","予約","make a reservation","予約を入れる"],
+["accommodation","宿泊施設","arrange accommodations","宿泊先を手配する"],
+["luggage","手荷物","check your luggage","手荷物を預ける"],
+["itinerary","旅程(表)","print the itinerary","旅程表を印刷する"],
+["delay","遅延、遅らせる","a two-hour delay","2時間の遅延"],
+["cancellation","取り消し","a cancellation fee","キャンセル料"],
+["announcement","発表、告知","make an announcement","発表を行う"],
+["notice","通知、気づく","until further notice","追って通知があるまで"],
+["notification","通知","receive a notification","通知を受け取る"],
+["reminder","念押しの通知","send a reminder","リマインダーを送る"],
+["confirmation","確認","a confirmation email","確認メール"],
+["inquiry","問い合わせ","respond to inquiries","問い合わせに対応する"],
+["complaint","苦情","handle complaints","苦情に対処する"],
+["response","返答、反応","a prompt response","迅速な返答"],
+["attachment","添付ファイル","open the attachment","添付ファイルを開く"],
+["document","書類","sign the documents","書類に署名する"],
+["form","用紙、記入用紙","fill out a form","用紙に記入する"],
+["survey","調査","conduct a survey","調査を実施する"],
+["questionnaire","アンケート","complete a questionnaire","アンケートに回答する"],
+["feedback","意見、感想","provide feedback","フィードバックを与える"],
+["review","批評、見直す","write a review","レビューを書く"],
+["advertisement","広告","place an advertisement","広告を出す"],
+["brochure","パンフレット","a travel brochure","旅行パンフレット"],
+["catalog","カタログ","browse the catalog","カタログに目を通す"],
+["subscription","定期購読","renew a subscription","定期購読を更新する"],
+["membership","会員資格","a membership card","会員カード"],
+["renewal","更新","contract renewal","契約の更新"],
+["expiration","期限切れ","the expiration date","有効期限"],
+["deposit","頭金、預ける","pay a deposit","頭金を払う"],
+["payment","支払い","a payment method","支払い方法"],
+["bill","請求書、紙幣","pay the electricity bill","電気料金を支払う"],
+["account","口座、取引先","open a bank account","銀行口座を開く"],
+["transaction","取引","a secure transaction","安全な取引"],
+["insurance","保険","health insurance","健康保険"],
+["income","収入","a stable income","安定した収入"],
+["property","不動産、財産","commercial property","商業用不動産"],
+["real estate","不動産","a real estate agent","不動産業者"],
+["lease","賃貸借契約","sign a two-year lease","2年の賃貸契約を結ぶ"],
+["tenant","賃借人、入居者","a new tenant","新しい入居者"],
+["landlord","家主","contact the landlord","家主に連絡する"],
+["rent","家賃、賃借する","pay the rent","家賃を払う"],
+["utility","公共料金、実用性","utility costs","光熱費"],
+["appliance","家電製品","kitchen appliances","台所用家電"],
+["furniture","家具","assemble the furniture","家具を組み立てる"],
+["renovation","改装","undergo renovations","改装工事を行う"],
+["construction","建設","under construction","建設中で"],
+["architect","建築家","a famous architect","有名な建築家"],
+["resident","住民","local residents","地元の住民"],
+["neighborhood","近隣、地域","a quiet neighborhood","静かな地域"],
+["pharmacy","薬局","the nearest pharmacy","最寄りの薬局"],
+["prescription","処方箋","fill a prescription","処方薬を調剤してもらう"],
+["checkup","健康診断","an annual checkup","年1回の健康診断"],
+["grocery","食料雑貨","a grocery store","食料品店"],
+["ingredient","材料、成分","fresh ingredients","新鮮な材料"],
+["beverage","飲み物","hot beverages","温かい飲み物"],
+["refreshments","軽い飲食物","serve refreshments","軽食を出す"],
+["banquet","宴会","a banquet hall","宴会場"],
+["caterer","仕出し業者","hire a caterer","ケータリング業者を雇う"],
+["reception","歓迎会、受付","a wedding reception","結婚披露宴"],
+["anniversary","記念日","the 10th anniversary","10周年記念"],
+["ceremony","式典","an opening ceremony","開会式"],
+["award","賞、授与する","win an award","賞を取る"],
+["achievement","業績、達成","a great achievement","偉大な業績"],
+["charity","慈善(団体)","a charity event","チャリティーイベント"],
+["donation","寄付","make a donation","寄付をする"],
+["volunteer","ボランティア(する)","volunteer at the event","イベントでボランティアをする"],
+["exhibition","展示会","an art exhibition","美術展"],
+["admission","入場(料)、入学","free admission","入場無料"],
+["venue","会場","change the venue","会場を変更する"],
+["performance","公演、業績","a live performance","生の公演"],
+["rehearsal","リハーサル","a dress rehearsal","本番同様の通し稽古"],
+["editor","編集者","a magazine editor","雑誌の編集者"],
+["publisher","出版社","contact the publisher","出版社に連絡する"],
+["publication","出版(物)","a monthly publication","月刊の出版物"],
+["author","著者","a best-selling author","ベストセラー作家"],
+["article","記事","read an article","記事を読む"],
+["journalist","記者","interview a journalist","記者にインタビューする"],
+["laboratory","研究所、実験室","a research laboratory","研究所"],
+["experiment","実験","carry out an experiment","実験を行う"],
+["research","研究、調査","market research","市場調査"],
+["professor","教授","a chemistry professor","化学の教授"],
+["lecture","講義","attend a lecture","講義に出席する"],
+["tuition","授業料","tuition fees","授業料"],
+["scholarship","奨学金","apply for a scholarship","奨学金に応募する"],
+["degree","学位","a master's degree","修士号"],
+["certificate","証明書、修了証","receive a certificate","修了証を受け取る"],
+["license","免許","a driver's license","運転免許証"],
+["permit","許可(証)","a parking permit","駐車許可証"],
+["instruction","指示、説明(書)","follow the instructions","指示に従う"],
+["manual","説明書","read the user manual","取扱説明書を読む"],
+["procedure","手順","a safety procedure","安全のための手順"],
+["process","過程、処理する","the hiring process","採用の過程"],
+["product","製品","develop a new product","新製品を開発する"],
+["item","品目、商品","a sold-out item","売り切れの商品"],
+["feature","特徴、特集する","a new feature","新機能"],
+["function","機能","an extra function","追加の機能"],
+["device","装置、機器","a mobile device","携帯機器"],
+["quality","品質","high quality","高い品質"],
+["quantity","数量","a large quantity","大量"],
+["material","材料、資料","building materials","建築資材"],
+["sample","見本","a free sample","無料の見本"],
+["demonstration","実演","a product demonstration","製品の実演"],
+["trial","試用、試み","a free trial","無料の試用"],
+["competitor","競合他社","a major competitor","主要な競合他社"],
+["competition","競争、大会","fierce competition","激しい競争"],
+["market","市場","enter a new market","新しい市場に参入する"],
+["demand","需要、要求(する)","meet the demand","需要を満たす"],
+["supply","供給(する)","supply and demand","需要と供給"],
+["trend","傾向","a recent trend","最近の傾向"],
+["growth","成長","rapid growth","急速な成長"],
+["increase","増加(する)","a price increase","値上げ"],
+["decrease","減少(する)","decrease by 10%","10%減少する"],
+["rate","割合、料金","a special rate","特別料金"],
+["figure","数値、人物","sales figures","売上高"],
+["percentage","割合","a high percentage","高い割合"],
+["majority","大多数","the majority of voters","投票者の大多数"],
+["average","平均(の)","above average","平均以上で"],
+["available","利用できる、入手できる","available online","オンラインで入手できる"],
+["convenient","便利な","a convenient location","便利な立地"],
+["suitable","適した","suitable for beginners","初心者に適した"],
+["effective","効果的な、有効な","an effective method","効果的な方法"],
+["valuable","貴重な","valuable advice","貴重な助言"],
+["affordable","手頃な価格の","affordable housing","手頃な価格の住宅"],
+["reasonable","(価格が)手頃な、妥当な","a reasonable price","手頃な価格"],
+["crowded","混雑した","a crowded train","混雑した電車"],
+["temporary","一時的な","a temporary position","臨時の職"],
+["permanent","常設の、恒久的な","a permanent exhibit","常設展示"],
+["annual","年1回の","an annual meeting","年次総会"],
+["previous","以前の","previous experience","これまでの経験"],
+["current","現在の","the current situation","現在の状況"],
+["recent","最近の","a recent study","最近の研究"],
+["immediate","即座の","an immediate reply","即答"],
+["urgent","緊急の","an urgent matter","緊急の用件"],
+["brief","短時間の、簡潔な","a brief meeting","短い会議"],
+["detailed","詳細な","a detailed report","詳細な報告書"],
+["entire","全体の","the entire staff","全職員"],
+["various","さまざまな","various options","さまざまな選択肢"],
+["additional","追加の","additional information","追加の情報"],
+["due","期限が来て、予定で","the report is due Friday","報告書の期限は金曜だ"]
+];
+const W7=[
+["implement","実施する","implement a new policy","新しい方針を実施する"],
+["comply","(規則に)従う","comply with safety regulations","安全規則に従う"],
+["regulation","規則、規制","follow the regulations","規則に従う"],
+["policy","方針、政策","a company policy","会社の方針"],
+["strategy","戦略","a marketing strategy","マーケティング戦略"],
+["objective","目標、客観的な","achieve the objective","目標を達成する"],
+["revenue","収益","annual revenue","年間収益"],
+["forecast","予測(する)","the sales forecast","売上予測"],
+["analysis","分析","a market analysis","市場分析"],
+["evaluation","評価","a performance evaluation","勤務評価"],
+["inspection","点検、検査","a safety inspection","安全点検"],
+["audit","監査(する)","conduct an audit","監査を実施する"],
+["merger","合併","a merger between two firms","2社間の合併"],
+["acquisition","買収、取得","announce an acquisition","買収を発表する"],
+["expansion","拡大","overseas expansion","海外への事業拡大"],
+["launch","発売(する)、開始(する)","launch a new product","新製品を発売する"],
+["release","発表(する)、発売(する)","release a statement","声明を発表する"],
+["distribute","配布する、流通させる","distribute the handouts","資料を配布する"],
+["manufacture","製造する","manufacture auto parts","自動車部品を製造する"],
+["manufacturer","製造業者","a leading manufacturer","大手メーカー"],
+["production","生産","increase production","生産を増やす"],
+["productivity","生産性","improve productivity","生産性を向上させる"],
+["efficiency","効率","energy efficiency","エネルギー効率"],
+["efficient","効率的な","an efficient system","効率的な仕組み"],
+["sufficient","十分な","sufficient funds","十分な資金"],
+["adequate","十分な、適切な","adequate parking space","十分な駐車スペース"],
+["currently","現在は","currently unavailable","現在は利用できない"],
+["previously","以前に","as previously mentioned","以前述べたとおり"],
+["approximately","約、およそ","approximately 30 minutes","約30分"],
+["immediately","直ちに","respond immediately","直ちに対応する"],
+["promptly","速やかに、時間どおりに","arrive promptly at nine","9時きっかりに到着する"],
+["temporarily","一時的に","temporarily closed","一時的に閉鎖中"],
+["frequently","頻繁に","frequently asked questions","よくある質問"],
+["significantly","大幅に","increase significantly","大幅に増加する"],
+["thoroughly","徹底的に","review the report thoroughly","報告書を徹底的に見直す"],
+["accordingly","それに応じて","plan accordingly","それに応じて計画する"],
+["otherwise","そうでなければ、別の方法で","unless otherwise noted","別途記載のない限り"],
+["address","対処する、演説","address the issue","問題に対処する"],
+["oversee","監督する","oversee the project","プロジェクトを監督する"],
+["supervise","監督する","supervise new staff","新人スタッフを監督する"],
+["coordinate","調整する、まとめる","coordinate the event","イベントを取りまとめる"],
+["collaborate","共同で行う","collaborate with partners","提携先と協働する"],
+["contribute","貢献する、寄稿する","contribute to the success","成功に貢献する"],
+["accommodate","収容する、(要望に)応える","accommodate 200 guests","200名の客を収容する"],
+["anticipate","予期する、見込む","anticipate strong demand","高い需要を見込む"],
+["ensure","確実にする","ensure timely delivery","期日どおりの配達を確実にする"],
+["enable","可能にする","enable faster access","より速いアクセスを可能にする"],
+["enhance","高める、向上させる","enhance the brand image","ブランドイメージを高める"],
+["expand","拡大する","expand the business","事業を拡大する"],
+["extend","延長する、広げる","extend the deadline","締め切りを延長する"],
+["postpone","延期する","postpone the meeting","会議を延期する"],
+["reschedule","予定を変更する","reschedule the appointment","予約を取り直す"],
+["expedite","早める、迅速化する","expedite the process","手続きを早める"],
+["streamline","効率化する","streamline operations","業務を効率化する"],
+["consolidate","統合する","consolidate two offices","2つの事務所を統合する"],
+["designate","指定する、任命する","a designated area","指定された区域"],
+["authorize","許可する、承認する","authorize the payment","支払いを承認する"],
+["reimburse","払い戻す","reimburse travel costs","出張費を払い戻す"],
+["reimbursement","払い戻し","request reimbursement","払い戻しを申請する"],
+["compile","(資料を)まとめる","compile the data","データをまとめる"],
+["revise","修正する、改訂する","revise the draft","草稿を修正する"],
+["proofread","校正する","proofread the article","記事を校正する"],
+["circulate","回覧する、出回る","circulate the memo","連絡メモを回覧する"],
+["allocate","割り当てる","allocate the budget","予算を割り当てる"],
+["assign","割り当てる、任命する","assign tasks to staff","スタッフに仕事を割り当てる"],
+["appoint","任命する","appoint a new director","新しい取締役を任命する"],
+["recruit","採用する","recruit engineers","エンジニアを採用する"],
+["retain","保持する、つなぎとめる","retain customers","顧客をつなぎとめる"],
+["resign","辞任する","resign from the board","役員会を辞任する"],
+["undergo","(検査・工事などを)受ける","undergo an inspection","検査を受ける"],
+["undertake","引き受ける","undertake a project","事業を引き受ける"],
+["conduct","実施する、行う","conduct an interview","面接を実施する"],
+["determine","決定する、特定する","determine the cause","原因を特定する"],
+["indicate","示す","indicate an increase","増加を示す"],
+["demonstrate","実演する、実証する","demonstrate the product","製品を実演する"],
+["specialize","専門とする","specialize in tax law","税法を専門とする"],
+["negotiate","交渉する","negotiate a contract","契約を交渉する"],
+["renew","更新する","renew the lease","賃貸契約を更新する"],
+["restore","復旧する、修復する","restore power","電力を復旧させる"],
+["resolve","解決する","resolve the complaint","苦情を解決する"],
+["notify","通知する","notify the applicants","応募者に通知する"],
+["remind","思い出させる","remind him of the meeting","会議のことを彼に念押しする"],
+["attract","引きつける","attract new customers","新規顧客を引きつける"],
+["promote","促進する、昇進させる","promote the campaign","キャンペーンを宣伝する"],
+["propose","提案する","propose a solution","解決策を提案する"],
+["approve","承認する","approve the request","申請を承認する"],
+["decline","断る、減少する","decline the offer","申し出を断る"],
+["acquire","獲得する、買収する","acquire a rival company","競合会社を買収する"],
+["establish","設立する、確立する","establish a subsidiary","子会社を設立する"],
+["subsidiary","子会社","a wholly owned subsidiary","完全子会社"],
+["division","部門","the marketing division","マーケティング部門"],
+["personnel","人事(部)、職員","the personnel department","人事部"],
+["payroll","給与(支払い)","on the payroll","雇用されている(給与名簿に載っている)"],
+["shift","交代勤務、変化","work the night shift","夜勤で働く"],
+["workload","仕事量","a heavy workload","多すぎる仕事量"],
+["morale","士気","boost employee morale","従業員の士気を高める"],
+["incentive","報奨、動機","offer incentives","報奨を提供する"],
+["compensation","報酬、補償","fair compensation","適正な報酬"],
+["allowance","手当","a housing allowance","住宅手当"],
+["paperwork","事務書類","finish the paperwork","事務書類を片付ける"],
+["shortage","不足","a labor shortage","人手不足"],
+["surplus","余剰、黒字","a budget surplus","予算の黒字"],
+["outcome","結果","the outcome of the survey","調査の結果"],
+["priority","優先事項","a top priority","最優先事項"],
+["alternative","代替案、代わりの","an alternative plan","代替案"],
+["component","部品、構成要素","electronic components","電子部品"],
+["specification","仕様","meet the specifications","仕様を満たす"],
+["capacity","収容能力、能力","seating capacity","座席数(収容能力)"],
+["duration","(継続)期間","for the duration of the event","イベントの期間中"],
+["defective","欠陥のある","a defective item","欠陥品"],
+["mandatory","義務的な、必須の","mandatory training","必須の研修"],
+["quarterly","四半期ごとの","a quarterly report","四半期報告書"],
+["upcoming","来たる、間近の","the upcoming event","間近に迫ったイベント"],
+["spacious","広々とした","a spacious lobby","広々としたロビー"]
+];
+const W8=[
+["meticulous","細心の、几帳面な","meticulous attention to detail","細部への細心の注意"],
+["lucrative","もうかる","a lucrative contract","実入りのよい契約"],
+["prospective","見込みのある、将来の","prospective clients","見込み客"],
+["tentative","仮の、暫定的な","a tentative schedule","仮の予定"],
+["unanimous","満場一致の","a unanimous decision","満場一致の決定"],
+["comprehensive","包括的な","a comprehensive report","包括的な報告書"],
+["exclusively","もっぱら、限定で","exclusively for members","会員限定で"],
+["subsequently","その後","subsequently promoted","その後昇進した"],
+["complimentary","無料の、称賛の","a complimentary beverage","無料の飲み物"],
+["courteous","礼儀正しい","courteous staff","礼儀正しいスタッフ"],
+["punctual","時間を守る","punctual for meetings","会議に時間厳守で"],
+["proficient","熟達した","proficient in Spanish","スペイン語に堪能な"],
+["exempt","免除された","exempt from the fee","料金を免除された"],
+["incur","(費用を)負う、招く","incur additional costs","追加費用が発生する"],
+["waive","(料金などを)免除する","waive the shipping fee","送料を免除する"],
+["adjacent","隣接した","adjacent to the lobby","ロビーに隣接した"],
+["outstanding","未払いの、傑出した","an outstanding balance","未払いの残高"],
+["overdue","期限を過ぎた","an overdue payment","支払いの延滞"],
+["provisional","暫定的な","a provisional agenda","暫定的な議題"],
+["discrepancy","食い違い、不一致","a discrepancy in the figures","数値の食い違い"],
+["surcharge","追加料金","a fuel surcharge","燃油追加料金"],
+["clientele","顧客層","a loyal clientele","常連の顧客層"],
+["patronage","ご愛顧、後援","thank you for your patronage","ご愛顧に感謝いたします"],
+["inclement","(天候が)荒れた","inclement weather","悪天候"],
+["state-of-the-art","最新式の","state-of-the-art equipment","最新式の機器"],
+["cutting-edge","最先端の","cutting-edge technology","最先端技術"],
+["durable","耐久性のある","a durable fabric","耐久性のある生地"],
+["versatile","多用途の、多才な","a versatile tool","多用途の道具"],
+["feasible","実行可能な","a feasible plan","実行可能な計画"],
+["viable","実行可能な、現実的な","a viable option","現実的な選択肢"],
+["imperative","必須の、命令","it is imperative to act now","今行動することが不可欠だ"],
+["redeem","(クーポンを)引き換える","redeem a coupon","クーポンを引き換える"],
+["endorse","支持する、推奨する","endorse the proposal","提案を支持する"],
+["solicit","(意見などを)求める","solicit feedback","意見を募る"],
+["disseminate","(情報を)広める","disseminate information","情報を広く伝える"],
+["adjourn","休会する","adjourn the meeting","会議をいったん終える"],
+["preside","議長を務める","preside over the meeting","会議の議長を務める"],
+["delegate","委任する、代表者","delegate tasks","仕事を任せる"],
+["liaison","連絡係","serve as a liaison","連絡係を務める"],
+["compliance","(法令)順守","ensure compliance","順守を徹底する"],
+["deteriorate","悪化する","deteriorate rapidly","急速に悪化する"],
+["fluctuate","変動する","prices fluctuate","価格が変動する"],
+["plummet","急落する","sales plummeted","売上が急落した"],
+["soar","急上昇する","profits soared","利益が急増した"],
+["robust","堅調な、頑丈な","robust sales","堅調な売上"],
+["sluggish","低迷した","a sluggish economy","低迷した経済"],
+["impending","差し迫った","an impending merger","差し迫った合併"],
+["inaugural","初の、就任の","the inaugural ceremony","開業(就任)式典"],
+["commemorate","記念する","commemorate the anniversary","記念日を祝う"],
+["philanthropic","慈善の","philanthropic activities","慈善活動"]
+];
+const GRAMMAR=[
+["The new copier is much more ___ than the old model.",["efficient","efficiency","efficiently","efficiencies"],0,"be動詞+more の後ろは形容詞。efficiency は名詞、efficiently は副詞。"],
+["Ms. Tanaka reviewed the proposal ___ before the meeting.",["careful","carefully","carefulness","caring"],1,"動詞 reviewed を修飾するのは副詞 carefully。"],
+["___ to the museum is free on Mondays.",["Admission","Admit","Admitting","Admitted"],0,"文の主語になるのは名詞。Admission(入場)が正解。"],
+["The manager made a ___ decision to postpone the launch.",["strategy","strategic","strategically","strategize"],1,"名詞 decision を修飾するのは形容詞 strategic。"],
+["Employees must complete the form ___.",["accurate","accuracy","accurately","accurateness"],2,"動詞 complete を修飾する副詞 accurately が正解。"],
+["The seminar provides ___ information for new investors.",["value","valuable","valuably","values"],1,"名詞 information を修飾する形容詞 valuable。"],
+["Her ___ to detail makes her an excellent editor.",["attentive","attention","attentively","attend"],1,"所有格 Her の後ろは名詞。attention to detail「細部への注意」。"],
+["The device is ___ designed for outdoor use.",["special","specialize","specially","specialty"],2,"過去分詞 designed を修飾する副詞 specially。"],
+["The report ___ by the accounting team last week.",["submitted","was submitted","has submitted","submits"],1,"by があるので受動態。last week なので過去形 was submitted。"],
+["By the time the guests arrive, the staff ___ the tables.",["set","will have set","has set","setting"],1,"by the time+現在形の節に対し、主節は未来完了 will have set。"],
+["Anyone ___ to attend must register by Friday.",["wish","wishes","wishing","wished"],2,"Anyone を後ろから修飾する現在分詞 wishing(〜したい人は誰でも)。"],
+["We look forward to ___ from you soon.",["hear","hearing","heard","be heard"],1,"look forward to の to は前置詞なので動名詞 hearing。"],
+["The committee suggested that the policy ___ revised.",["is","be","was","has been"],1,"suggest that の後は動詞の原形(仮定法現在)。that S (should) be 〜。"],
+["___ the report, Mr. Lee found several errors.",["Review","Reviewed","Reviewing","Reviews"],2,"分詞構文。「報告書を確認していて」なので現在分詞 Reviewing。"],
+["The store is open ___ 10 A.M. to 9 P.M.",["from","at","in","on"],0,"from A to B「AからBまで」。"],
+["The project must be completed ___ the end of March.",["by","until","on","at"],0,"「〜までに(完了)」は by。until は「〜まで(継続)」。"],
+["___ heavy rain, the outdoor event was moved indoors.",["Due to","Because","Although","While"],0,"後ろが名詞(heavy rain)なので前置詞 Due to。Because は接続詞で文が続く。"],
+["The office will be closed ___ the renovation period.",["during","while","among","between"],0,"名詞句の前に置けるのは前置詞 during。while は接続詞。"],
+["Please respond ___ 48 hours of receiving this notice.",["within","by","until","among"],0,"within+期間「〜以内に」。within 48 hours of 〜。"],
+["___ the price was high, the quality was disappointing.",["Although","Despite","Because of","However"],0,"後ろに文(S+V)が続くので接続詞 Although。Despite は前置詞。"],
+["The flight was delayed, ___ we missed the connection.",["so","because","although","unless"],0,"「遅れた、その結果乗り継ぎを逃した」— 結果を表す so。"],
+["Neither the manager ___ the staff knew about the change.",["nor","or","and","but"],0,"neither A nor B「AもBも〜ない」の相関接続詞。"],
+["___ you have any questions, please contact the front desk.",["If","Unless","Whether","That"],0,"「質問があれば」— 条件の If。Unless は「〜でない限り」。"],
+["The event will be held outdoors ___ it rains.",["unless","despite","without","whereas"],0,"「雨が降らない限り屋外で」— unless(〜でない限り)。"],
+["Applicants must submit ___ resumes by e-mail.",["they","their","them","theirs"],1,"名詞 resumes の前は所有格 their。"],
+["The candidate ___ we interviewed yesterday has accepted the offer.",["whom","whose","which","what"],0,"先行詞が人で interviewed の目的語なので目的格 whom。"],
+["Employees ___ complete the training will receive a certificate.",["who","whom","whose","which"],0,"先行詞が人で動詞 complete の主語になるので主格 who。"],
+["The hotel ___ we stayed last month has closed.",["where","which","who","whom"],0,"stayed の後ろに目的語が不要(自動詞)なので関係副詞 where。"],
+["The company revised ___ vacation policy.",["it","its","it's","itself"],1,"名詞の前は所有格 its。it's は it is の短縮形。"],
+["This model is ___ the most reliable of the three.",["by far","very","much more","as"],0,"最上級の強調は by far(断然)。"],
+["The new office is twice ___ large as the old one.",["as","so","more","too"],0,"倍数表現 twice as ~ as …「…の2倍〜」。"],
+["___ of the two designs was approved.",["Neither","None","Not","No"],0,"「2つのうちどちらも〜ない」は Neither。None は3つ以上。"],
+["The warranty does not ___ damage caused by misuse.",["cover","protect","insure","reserve"],0,"cover「(保証・保険が)〜を対象とする」。TOEIC頻出の意味。"],
+["We apologize for any ___ this may cause.",["inconvenience","inconvenient","convenience","convenient"],0,"for(前置詞)の後ろは名詞。「ご不便をおかけして」の定型表現。"],
+["After months of talks, the two parties finally reached an ___.",["agreement","argument","apology","appointment"],0,"reach an agreement「合意に達する」。コロケーションで覚える。"],
+["All passengers must ___ their seat belts during takeoff.",["fasten","attach","connect","tie"],0,"fasten a seat belt「シートベルトを締める」が定型表現。"]
+];
+/* ---------- assemble ---------- */
+const WORDS=[];
+[[W6,600],[W7,730],[W8,860]].forEach(([a,lv])=>a.forEach(e=>WORDS.push({w:e[0],m:e[1],p:e[2],pj:e[3],lv})));
+const byWord={}; WORDS.forEach(x=>byWord[x.w]=x);
+
+/* ---------- state ---------- */
+const KEY="sukima-toeic-v1", INT=[0,1,3,7,14,30], GOAL=3, EXAM=new Date(2027,0,31);
+let S={c:{},streak:0,last:"",day:"",done:0,tw:0,cw:0,gs:{},ms:[]};
+let storageOK=true;
+try{ const raw=localStorage.getItem(KEY); if(raw) S=Object.assign(S,JSON.parse(raw)); }
+catch(e){ storageOK=false; }
+function persist(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){ storageOK=false; } }
+function todayStr(d){ d=d||new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function dayNum(){ const d=new Date(); return Math.floor((d.getTime()-d.getTimezoneOffset()*6e4)/864e5); }
+function normalize(){
+  const t=todayStr();
+  if(S.day!==t){
+    S.day=t; S.done=0;
+    const y=todayStr(new Date(Date.now()-864e5));
+    if(S.last && S.last!==t && S.last!==y) S.streak=0;
+  }
+}
+/* ---------- helpers ---------- */
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function esc(s){ return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function rescape(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"); }
+function hlPhrase(it){
+  const re=new RegExp("("+rescape(it.w)+"\\w*)","i");
+  const p=esc(it.p);
+  return re.test(it.p) ? p.replace(new RegExp("("+rescape(esc(it.w))+"\\w*)","i"),"<b>$1</b>") : p;
+}
+function speak(t){
+  try{ if(!("speechSynthesis" in window)) return;
+    const u=new SpeechSynthesisUtterance(t); u.lang="en-US"; u.rate=0.95;
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  }catch(e){}
+}
+function masteredCount(lv){
+  let n=0; for(const w in S.c){ if(S.c[w].b>=4 && byWord[w] && (!lv||byWord[w].lv===lv)) n++; } return n;
+}
+function dueCount(){ const t=dayNum(); let n=0; for(const w in S.c){ if(S.c[w].d<=t && byWord[w]) n++; } return n; }
+
+/* ---------- session ---------- */
+let ses=null;
+function pickWords(n){
+  const t=dayNum();
+  const due=Object.keys(S.c).filter(w=>byWord[w]&&S.c[w].d<=t)
+    .sort((a,b)=>S.c[a].d-S.c[b].d||S.c[a].b-S.c[b].b).slice(0,n);
+  const q=due.slice();
+  if(q.length<n) for(const x of WORDS){ if(!S.c[x.w]){ q.push(x.w); if(q.length>=n) break; } }
+  if(q.length<n){
+    const rest=Object.keys(S.c).filter(w=>byWord[w]&&!q.includes(w)).sort((a,b)=>S.c[a].b-S.c[b].b);
+    q.push(...rest.slice(0,n-q.length));
+  }
+  return q.map(w=>byWord[w]);
+}
+function pickGrammar(n){
+  const idx=GRAMMAR.map((_,i)=>i);
+  shuffle(idx); idx.sort((a,b)=>(S.gs[a]||0)-(S.gs[b]||0));
+  return idx.slice(0,n).map(i=>({q:GRAMMAR[i],gi:i}));
+}
+function choicesFor(it){
+  const same=WORDS.filter(x=>x.w!==it.w&&x.lv===it.lv&&x.m!==it.m);
+  const other=WORDS.filter(x=>x.w!==it.w&&x.lv!==it.lv&&x.m!==it.m);
+  const pool=shuffle(same).concat(shuffle(other));
+  const picks=[], seen=new Set([it.m]);
+  for(const x of pool){ if(!seen.has(x.m)){ picks.push(x.m); seen.add(x.m); } if(picks.length>=3) break; }
+  return shuffle([it.m,...picks]);
+}
+function startSession(mode){
+  const steps=[];
+  if(mode==="mix"){ pickWords(10).forEach(x=>steps.push({t:"w",x})); pickGrammar(3).forEach(g=>steps.push({t:"g",...g})); }
+  else if(mode==="word"){ pickWords(12).forEach(x=>steps.push({t:"w",x})); }
+  else { pickGrammar(6).forEach(g=>steps.push({t:"g",...g})); }
+  if(!steps.length){ return; }
+  ses={steps,i:0,total:steps.length,correct:0,mode};
+  renderStep();
+}
+/* ---------- views ---------- */
+const view=document.getElementById("view");
+function fmt(n){ return n.toLocaleString("ja-JP"); }
+function home(){
+  normalize(); persist();
+  const dleft=Math.max(0,Math.ceil((EXAM-new Date())/864e5));
+  document.getElementById("dleft").textContent=dleft;
+  const mAll=masteredCount(), due=dueCount();
+  const seen=Object.keys(S.c).filter(w=>byWord[w]).length;
+  const acc=S.tw?Math.round(100*S.cw/S.tw):0;
+  const dots=[0,1,2].map(i=>'<span class="dot'+(i<S.done?" on":"")+'"></span>').join("");
+  const lvbar=[600,730,860].map(lv=>{
+    const tot=WORDS.filter(x=>x.lv===lv).length, m=masteredCount(lv);
+    const pc=tot?Math.round(100*m/tot):0;
+    return '<div class="lvrow"><span class="tag">'+lv+'点level</span><span class="bar"><i style="width:'+pc+'%"></i></span><span class="n">'+m+"/"+tot+"</span></div>";
+  }).join("");
+  view.innerHTML=
+    '<div class="panel"><div class="row">'+
+      '<div class="streak">🔥 <b>'+S.streak+'</b> 日連続</div>'+
+      '<div><div class="dots">'+dots+'</div><div class="dotlbl">今日 '+S.done+"/"+GOAL+' セット</div></div>'+
+    "</div></div>"+
+    (due>0?'<div style="text-align:center;margin:14px 0 4px"><span class="duechip">今日の復習: '+due+"語</span></div>":"")+
+    '<button class="btn" onclick="startSession(\'mix\')">▶ 5分セッション(単語10+文法3)</button>'+
+    '<div class="btnrow">'+
+      '<button class="btn sub" onclick="startSession(\'word\')">単語だけ 12問</button>'+
+      '<button class="btn sub" onclick="startSession(\'gram\')">文法だけ 6問</button>'+
+    "</div>"+
+    '<div class="panel"><h3>学習の記録</h3><div class="statgrid">'+
+      '<div class="stat"><div class="num">'+mAll+'</div><div class="lbl">覚えた単語</div></div>'+
+      '<div class="stat"><div class="num">'+seen+"/"+WORDS.length+'</div><div class="lbl">学習した単語</div></div>'+
+      '<div class="stat"><div class="num">'+acc+'%</div><div class="lbl">正答率</div></div>'+
+    "</div>"+lvbar+"</div>"+
+    '<details><summary>📱 iPhoneでアプリのように使う</summary>Safariでこのページを開き、共有ボタン(□に↑)→「ホーム画面に追加」。アイコンから1タップで起動できます。進捗はこの端末のブラウザに保存されます'+(storageOK?"":"(⚠️ この環境では保存が無効です)")+'。</details>'+
+    '<div class="foot">収録: 単語'+WORDS.length+'語(オリジナル編集)+文法'+GRAMMAR.length+'問 / 「覚えた」=復習間隔14日以上</div>';
+}
+function renderStep(){
+  const st=ses.steps[ses.i];
+  const head='<div class="prog"><span>'+(ses.i+1)+" / "+ses.steps.length+'</span><span>正解 '+ses.correct+"</span></div>";
+  if(st.t==="w"){
+    const cs=choicesFor(st.x);
+    view.innerHTML=head+
+      '<div class="qcard"><div class="qword">'+esc(st.x.w)+'</div>'+
+      '<div class="qphrase">'+hlPhrase(st.x)+'</div>'+
+      '<div class="ask">この単語の意味は?</div></div>'+
+      cs.map(m=>'<button class="choice" data-m="'+esc(m)+'">'+esc(m)+"</button>").join("")+
+      '<div class="fb" id="fb"></div>';
+    view.querySelectorAll(".choice").forEach(b=>b.onclick=()=>answerWord(st,b));
+  }else{
+    const q=st.q;
+    view.innerHTML=head+
+      '<div class="qcard"><div class="qsent">'+esc(q[0]).replace("___","<b>______</b>")+'</div>'+
+      '<div class="ask">空所に入るのは?</div></div>'+
+      q[1].map((c,ci)=>'<button class="choice" data-i="'+ci+'">'+esc(c)+"</button>").join("")+
+      '<div class="fb" id="fb"></div>';
+    view.querySelectorAll(".choice").forEach(b=>b.onclick=()=>answerGrammar(st,b));
+  }
+  window.scrollTo(0,0);
+}
+function lockChoices(){ view.querySelectorAll(".choice").forEach(b=>b.disabled=true); }
+function nextBtn(auto){
+  const id="nx"+ses.i;
+  const html='<button class="btn" id="'+id+'" style="margin-top:12px">次へ</button>';
+  setTimeout(()=>{ const b=document.getElementById(id); if(b) b.onclick=advance; },0);
+  if(auto) setTimeout(()=>{ if(document.getElementById(id)) advance(); },900);
+  return html;
+}
+function answerWord(st,btn){
+  lockChoices();
+  const ok=btn.dataset.m===st.x.m;
+  const t=dayNum(), c=S.c[st.x.w]||{b:0,d:t};
+  if(!st.retry){ ses.correct+=ok?1:0; }
+  S.tw++; if(ok) S.cw++;
+  if(ok){ c.b=Math.min(5,c.b+1); c.d=t+INT[c.b]; }
+  else { c.b=0; c.d=t; if(!st.retry){ ses.steps.push({t:"w",x:st.x,retry:true}); ses.total++; } }
+  S.c[st.x.w]=c; persist();
+  btn.classList.add(ok?"ok":"ng");
+  if(!ok) view.querySelectorAll(".choice").forEach(b=>{ if(b.dataset.m===st.x.m) b.classList.add("ok"); });
+  document.getElementById("fb").innerHTML=
+    '<div class="mark '+(ok?"good":"bad")+'">'+(ok?"正解!":"不正解 → あとでもう一度出ます")+'</div>'+
+    '<div style="margin:8px 0"><button class="spk" onclick="speak(\''+st.x.p.replace(/'/g,"\\'")+'\')">🔊 発音を聞く</button></div>'+
+    '<div class="exp">'+hlPhrase(st.x)+"<br>"+esc(st.x.pj)+"</div>"+nextBtn(ok);
+}
+function answerGrammar(st,btn){
+  lockChoices();
+  const q=st.q, ok=Number(btn.dataset.i)===q[2];
+  if(!st.retry) ses.correct+=ok?1:0;
+  S.gs[st.gi]=(S.gs[st.gi]||0)+1; persist();
+  btn.classList.add(ok?"ok":"ng");
+  if(!ok) view.querySelectorAll(".choice").forEach(b=>{ if(Number(b.dataset.i)===q[2]) b.classList.add("ok"); });
+  document.getElementById("fb").innerHTML=
+    '<div class="mark '+(ok?"good":"bad")+'">'+(ok?"正解!":"不正解")+'</div>'+
+    '<div class="exp">正解: <b>'+esc(q[1][q[2]])+"</b><br>"+esc(q[3])+"</div>"+nextBtn(false);
+}
+function advance(){
+  ses.i++;
+  if(ses.i<ses.steps.length) renderStep(); else finishSession();
+}
+function finishSession(){
+  normalize();
+  const t=todayStr();
+  if(S.last!==t){
+    const y=todayStr(new Date(Date.now()-864e5));
+    S.streak=(S.last===y)?S.streak+1:1;
+    S.last=t;
+  }
+  S.done++;
+  const first=ses.steps.filter(s=>!s.retry).length;
+  const pct=first?Math.round(100*ses.correct/first):0;
+  const msg= pct>=90?"完璧!この調子。": pct>=70?"いい感じ。忘れた頃にまた出ます。": pct>=50?"間違えた語こそ覚えるチャンス。":"難しかった分、次は必ず楽になります。";
+  const miles=[];
+  [[3,"🎉 3日連続!習慣になり始めています"],[7,"🎉 1週間連続!素晴らしい継続力"],[14,"🎉 2週間連続!もう習慣です"],[30,"🏆 30日連続!本番が楽しみですね"],[60,"🏆 60日連続!ここまで来たら勝ちです"]]
+    .forEach(([n,m])=>{ if(S.streak===n&&!S.ms.includes("s"+n)){ S.ms.push("s"+n); miles.push(m); } });
+  const mc=masteredCount();
+  [[50,"⭐ 50語マスター!"],[100,"⭐ 100語マスター!折り返しが見えてきた"],[200,"⭐ 200語マスター!語彙が武器になっています"],[300,"🏆 300語マスター!"],[WORDS.length,"🏆 全単語マスター!!"]]
+    .forEach(([n,m])=>{ if(mc>=n&&!S.ms.includes("w"+n)){ S.ms.push("w"+n); miles.push(m); } });
+  persist();
+  view.innerHTML=
+    '<div class="panel" style="margin-top:24px">'+
+    '<div class="bignum">'+ses.correct+" / "+first+'</div>'+
+    '<div class="msg">'+msg+'</div>'+
+    '<div class="row" style="justify-content:center;gap:20px">'+
+      '<span class="streak">🔥 '+S.streak+'日</span>'+
+      '<span class="dotlbl" style="font-size:.85rem">今日 '+S.done+"/"+GOAL+" セット"+(S.done>=GOAL?" 達成🎉":"")+'</span>'+
+    "</div></div>"+
+    miles.map(m=>'<div class="mile">'+m+"</div>").join("")+
+    '<button class="btn" onclick="startSession(\''+ses.mode+'\')">もう1セット</button>'+
+    '<button class="btn sub" onclick="home()">ホームへ</button>';
+  window.scrollTo(0,0);
+}
+home();
+</script>
